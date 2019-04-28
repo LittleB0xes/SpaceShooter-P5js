@@ -1,5 +1,6 @@
 
-const MAX_ENEMY = 13;
+const MAX_ENEMY = 10;
+const MAX_LIFE = 5;
 
 let spaceShip;
 let enemies = [];
@@ -9,6 +10,7 @@ let spaceShipImg;
 let bulletImg;
 let bulletEnemyImg;
 let enemyImg1;
+let enemyImg1b;
 let enemyImg2;
 let enemyImg3;
 let state = 0;
@@ -19,6 +21,7 @@ function preload() {
 	bulletImg = loadImage('assets/bullet.png');
 	bulletEnemyImg = loadImage('assets/bullet2.png');
 	enemyImg1 = loadImage('assets/enemy1.png');
+	enemyImg1b = loadImage('assets/enemy1b.png');
 	enemyImg2 = loadImage('assets/enemy2.png');
 	enemyImg3 = loadImage('assets/enemy3.png');
 	myFont = loadFont('assets/8-bit-pusab.ttf');
@@ -28,7 +31,7 @@ function setup() {
 	//frameRate(60);
 	createCanvas(400,600);
 
-	spaceShip = new SpaceShip();
+	spaceShip = new SpaceShip(MAX_LIFE);
 	for (i=0; i<MAX_ENEMY; i++) {
 		enemies[i] = new Enemy();
 	}
@@ -219,19 +222,19 @@ function keyReleased() {
 }
 
 class SpaceShip {
-	constructor(initX = width / 2, initY = height - 30) {
-		this.x = initX;
-		this.y = initY;
+	constructor(life) {
+		this.x = width / 2;
+		this.y = height - 30;
 		this.speed = 5;
 		this.direction = 0;
 		this.upDown = 0;
-		this.life = 3;
+		this.life = life;
 		this.score = 0;
-		this.radius = 15;
+		this.radius = 22;
 	}
 
 	show() {
-		image(spaceShipImg, this.x-15, this.y-15);
+		image(spaceShipImg, this.x-this.radius, this.y-this.radius);
 	}
 
 	move() {
@@ -258,7 +261,7 @@ class Bullet {
 		this.x = initX;
 		this.y = initY - 10;
 		this.speed = 5;
-		this.radius = 3;
+		this.radius = 4;
 	}
 
 	show() {
@@ -274,7 +277,7 @@ class EnemyBullet {
 		this.x = initX;
 		this.y = initY - offset;
 		this.speed = 5;
-		this.radius = 3;
+		this.radius = 6;
 	}
 
 	show() {
@@ -298,21 +301,22 @@ class Enemy{
 			this.image = enemyImg1;
 			this.life = 2;
 			this.point = 2;
-			this.radius = 15;
+			this.radius = 20;
+			this.dirPostHit = Math.pow(-1, Math.round(random(1,2))) * random(0.2,0.5);
 		} else if (enemyLottery >= 4 && enemyLottery < 9 ) {
 			this.type = 2;
 			this.speed = random(4,6);
 			this.image = enemyImg2;
 			this.life = 1;
 			this.point = 1;
-			this.radius = 15;
+			this.radius = 18;
 		} else if (enemyLottery >= 9 && enemyLottery <= 10 ) {
 			this.type = 3;
 			this.speed = random(3,5);
 			this.image = enemyImg3;
 			this.life = 1;
 			this.point = 1;
-			this.radius = 15;
+			this.radius = 17;
 		}
 	}
 
@@ -328,26 +332,31 @@ class Enemy{
 			this.image = enemyImg1;
 			this.life = 2;
 			this.point = 2;
-			this.radius = 15;
+			this.radius = 20;
+			this.dirPostHit = Math.pow(-1, Math.round(random(1,2))) * random(0.2,0.5);
 		} else if (enemyLottery >= 4 && enemyLottery < 9 ) {
 			this.type = 2;
 			this.speed = random(4,6);
 			this.image = enemyImg2;
 			this.life = 1;
 			this.point = 1;
-			this.radius = 15;
+			this.radius = 18;
 		} else if (enemyLottery >= 9 && enemyLottery <= 10 ) {
 			this.type = 3;
 			this.speed = random(3,5);
 			this.image = enemyImg3;
 			this.life = 1;
 			this.point = 1;
-			this.radius = 15;
+			this.radius = 17;
 		}
 	}
 
 	move() {
-		if (this.type == 3) {
+		if (this.type == 1 && this.life == 1) {
+			this.image = enemyImg1b;
+			this.y +=this.speed;
+			this.x += this.speed * this.dirPostHit;
+		}else if (this.type == 3) {
 			this.y +=this.speed;
 			this.x = 0.5 * width * (1+  cos(5 * this.y / width ));
 			if (Math.round(random(1,50)) == 1 && this.y > 0) {
