@@ -1,14 +1,18 @@
 
-const MAX_ENEMY = 10;
+const MAX_ENEMY = 8;
 const MAX_LIFE = 3;
 
 let spaceShip;
+let boss;
 let enemies = [];
 let bullets = [];
+let bonus = [];
 let explosions = [];
 let enemyBullets = [];
 let explosionAnim = [];
+let bonusImg = [];
 let spaceShipImg;
+let bossImg = [];
 let bulletImg;
 let bulletEnemyImg;
 let enemyImg1;
@@ -30,6 +34,9 @@ function preload() {
 	for (let i = 1; i<7; i++) {
 		explosionAnim.push(loadImage('assets/expl'+i+'.png'));
 	}
+	bonusImg[0] = loadImage('assets/bonus0.png');
+	bossImg[0] = loadImage('assets/boss0.png');
+
 	
 }
 
@@ -44,21 +51,6 @@ function setup() {
 	for (let i = 0; i<150; i++) {
 		stars[i] = new Star(random(0, width), random(-height, height));
 	}
-}
-
-function intersectWith(object1, object2) {
-	let distance = dist(object1.x, object1.y, object2.x, object2.y);
-	if (distance < object1.radius + object2.radius) {
-		return true;
-	} else {
-		return false;
-	}
-}
-function mouvementOfStars() {
-	for (star of stars) {
-			star.move();
-			star.show();
-		}
 }
 
 function draw() {
@@ -88,15 +80,38 @@ function draw() {
 		mouvementOfStars();
 		spaceShip.show();
 		spaceShip.move();
-		if (spaceShip.life == 0) {
+		if (spaceShip.life <= 0) {
 			state = 99;
 		}
+
 
 		//Enemy's move
 		for (enemy of enemies) {
 			enemy.move();
+			if (enemy.fire()) {
+				enemyBullets.push(new EnemyBullet(enemy.x, enemy.y, enemy.radius));
+			}
+			
 			enemy.show();
 		}
+
+
+		// Bonus
+		if (random(1,100) <= 2) {
+			bonus.push(new Bonus);
+		}
+		for (i = 0; i < bonus.length; i++) {
+			bonus[i].move();
+			bonus[i].show();
+			if (intersectWith(bonus[i], spaceShip)) {
+				bonus[i].effect(spaceShip);
+				bonus[i].y = -10;
+			}
+			if (bonus[i].y < 0) {
+				bonus.splice(1, i);
+			}
+		}
+
 
 		//Eplosion draw
 		for (let i = 0; i < explosions.length; i++) {
@@ -129,46 +144,14 @@ function draw() {
 			}
 		}
 		// Bullet's move
-		for (let i = 0; i < bullets.length; i++) {
-			bullets[i].move();
-			bullets[i].show();
-			for (let j = 0; j < enemies.length; j++) {
-				if (intersectWith(bullets[i], enemies[j])) {
-					bullets[i].y = - 10;
-					enemies[j].life -=1;
-					if (enemies[j].life == 0) {
-						explosions.push(createVector(enemies[j].x,enemies[j].y, frameCount));
-						enemies[j].reborn();
-						spaceShip.score += enemies[j].point;
-					}
-					
-				}
-			}
-		}
-
+		bulletMove();
+	
 		// Enemy's bullet
-		for (bullet of enemyBullets) {
-			bullet.move();
-			bullet.show();
-			if (intersectWith(bullet, spaceShip)) {
-				// Go out of the screen
-				bullet.y = height +10;
-				spaceShip.life -=1;
-				background(255,0,0);
-			}
-		}
+		bulletEnemyMove();
+		
 
-		// Remove bullet when it's out of screen
-		for (i = 0; i < bullets.length; i++) {
-			if (bullets[i].y < 0) {
-				bullets.splice(i, 1);
-			}
-		}
-		for (i = 0; i < enemyBullets.length; i++) {
-			if (enemyBullets[i].y > height) {
-				enemyBullets.splice(i, 1);
-			}
-		}
+		
+		
 
 	} else if (state = 99) {
 		// Final Screen
@@ -240,8 +223,68 @@ function keyReleased() {
 	}
 }
 
+function intersectWith(object1, object2) {
+	let distance = dist(object1.x, object1.y, object2.x, object2.y);
+	if (distance < object1.radius + object2.radius) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function mouvementOfStars() {
+	for (star of stars) {
+			star.move();
+			star.show();
+		}
+}
+
 function explosion(x,y, startFrame) {
 	image(explosionAnim[(frameCount - startFrame) % 6], x, y);
+}
+
+function bulletMove() {
+	for (let i = 0; i < bullets.length; i++) {
+		bullets[i].move();
+		bullets[i].show();
+		for (let j = 0; j < enemies.length; j++) {
+			if (intersectWith(bullets[i], enemies[j])) {
+				bullets[i].y = - 10;
+				enemies[j].life -=1;
+				if (enemies[j].life == 0) {
+					explosions.push(createVector(enemies[j].x,enemies[j].y, frameCount));
+					enemies[j].reborn();
+					spaceShip.score += enemies[j].point;
+				}
+				
+			}
+		}
+	}
+	// Remove bullet when it's out of screen
+	for (i = 0; i < bullets.length; i++) {
+		if (bullets[i].y < 0) {
+			bullets.splice(i, 1);
+		}
+	}
+}
+
+function bulletEnemyMove(){
+	for (bullet of enemyBullets) {
+		bullet.move();
+		bullet.show();
+		if (intersectWith(bullet, spaceShip)) {
+			// Go out of the screen
+			bullet.y = height +10;
+			spaceShip.life -=1;
+			background(255,0,0);
+		}
+	}
+	// Remove bullet when it's out of screen
+	for (i = 0; i < enemyBullets.length; i++) {
+		if (enemyBullets[i].y > height) {
+			enemyBullets.splice(i, 1);
+		}
+	}
 }
 
 class SpaceShip {
@@ -279,6 +322,29 @@ class SpaceShip {
 	}
 }
 
+class Bonus {
+	constructor(type = 0) { //random ensuite
+		this.x = random(10, width - 10);
+		this.y = -10;
+		this.speed = 6;
+		this.type = type;
+		this.radius = 9;
+	}
+
+	move(){
+		this.y += this.speed;
+	}
+
+	show() {
+		image(bonusImg[0], this.x - this.radius, this.y - this.radius);
+	}
+
+	effect(player) {
+		player.life +=1;
+
+	}
+}
+
 class Bullet {
 	constructor(initX, initY) {
 		this.x = initX;
@@ -297,8 +363,8 @@ class Bullet {
 
 class EnemyBullet {
 	constructor(initX, initY, offset = 15) {
-		this.xBullet = initX;
-		this.yBullet = initY - offset;
+		this.x = initX;
+		this.y = initY - offset;
 		this.speedBullet = 15;
 		this.radius = 6;
 	}
@@ -307,13 +373,14 @@ class EnemyBullet {
 		image(bulletEnemyImg, this.x-3, this.y-3);
 	}
 	move() {
-		this.yBullet += this.speedBullet;
+		this.y += this.speedBullet;
 	}
 }
 
 class Enemy{
 	constructor() {
-		this.x = random(10, width -10);
+		this.reborn();
+		/*this.x = random(10, width -10);
 		this.y = random(-10, -400);
 		
 		let enemyLottery = random(1,10);
@@ -338,14 +405,14 @@ class Enemy{
 			this.speed = random(6,10);
 			this.image = enemyImg3;
 			this.life = 1;
-			this.point = 1;
+			this.point = 3;
 			this.radius = 17;
-		}
+		}*/
 	}
 
 	reborn() {
 		this.x = random(10, width -10);
-		this.y = random(-10, -400);
+		this.y = random(-40, -400);
 		
 		let enemyLottery = random(1,10);
 		this.image = {}
@@ -369,7 +436,7 @@ class Enemy{
 			this.speed = random(6,10);
 			this.image = enemyImg3;
 			this.life = 1;
-			this.point = 1;
+			this.point = 3;
 			this.radius = 17;
 		}
 	}
@@ -382,16 +449,37 @@ class Enemy{
 		}else if (this.type == 3) {
 			this.y +=this.speed;
 			this.x = 0.5 * width * (1+  cos(5 * this.y / width ));
-			if (Math.round(random(1,50)) == 1 && this.y > 0) {
+			/*if (random(0,25) < 1 && this.y > 0) {
 				enemyBullets.push(new EnemyBullet(this.x, this.y, this.radius));
-			}
+			}*/
 		} else {
 			this.y +=this.speed;
 		}
 	}
 
+	fire() {
+		if (this.type == 3) {
+			if (random(0,25) < 1 && this.y > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	show() {
 		image(this.image, this.x-15, this.y-15);
+	}
+}
+
+class Boss {
+	constructor() {
+
+	}
+	show() {
+
+	}
+	move() {
+
 	}
 }
 
